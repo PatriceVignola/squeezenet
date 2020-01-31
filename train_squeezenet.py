@@ -1,7 +1,7 @@
 import os
 import tensorflow as tf
 
-from slim.deployment import model_deploy
+from models.research.slim.deployment import model_deploy
 
 from squeezenet import inputs
 from squeezenet import networks
@@ -30,8 +30,6 @@ def _run(args):
         examples, labels = pipeline.data
         images = examples['image']
 
-        print("****************************IMAGE SPLITS")
-        print(images)
         image_splits = tf.split(
             value=images,
             num_or_size_splits=deploy_config.num_clones,
