@@ -53,7 +53,6 @@ class ArgParser(object):
             '--num_classes',
             default=10,
             type=int,
-            required=True,
             help='''Number of classes (unique labels) in the dataset.
                     Ignored if using CIFAR network version.'''
         )
@@ -61,7 +60,6 @@ class ArgParser(object):
             '--num_gpus',
             default=1,
             type=int,
-            required=True,
         )
         parser.add_argument(
             '--batch_size',
@@ -90,7 +88,6 @@ class ArgParser(object):
             '--num_input_threads',
             default=1,
             type=int,
-            required=True,
             help='''The number input elements to process in parallel.'''
         )
         parser.add_argument(
@@ -129,5 +126,11 @@ class ArgParser(object):
             '--keep_last_n_checkpoints',
             default=3,
             type=int
+        )
+        parser.add_argument(
+            '--data_format',
+            default='NCHW',
+            type=str,
+            choices=['NCHW', 'NHWC']
         )
         return parser

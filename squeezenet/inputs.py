@@ -20,7 +20,8 @@ class Pipeline(object):
             seed=args.seed,
             files=args.train_tfrecord_filepaths,
             distort_image=True,
-            target_image_size=target_image_size
+            target_image_size=target_image_size,
+            data_format=args.data_format
         )
 
         validation_dataset = self._create_dataset(
@@ -32,7 +33,8 @@ class Pipeline(object):
             shuffle_buffer=None,
             files=args.validation_tfrecord_filepaths,
             distort_image=False,
-            target_image_size=target_image_size
+            target_image_size=target_image_size,
+            data_format=args.data_format
         )
 
         self._handle = tf.placeholder(tf.string, shape=[])
@@ -77,7 +79,8 @@ class Pipeline(object):
                         files,
                         seed=1337,
                         distort_image=None,
-                        target_image_size=None):
+                        target_image_size=None,
+                        data_format='NCHW'):
         assert batch_size % 2 == 0
 
         input_processor = _InputProcessor(
@@ -88,7 +91,8 @@ class Pipeline(object):
             shuffle_buffer=shuffle_buffer,
             seed=seed,
             distort_image=distort_image,
-            target_image_size=target_image_size
+            target_image_size=target_image_size,
+            data_format=data_format
         )
 
         dataset = input_processor.from_tfrecords(files)
@@ -126,7 +130,8 @@ class _InputProcessor(object):
                  shuffle_buffer,
                  seed,
                  distort_image=None,
-                 target_image_size=None):
+                 target_image_size=None,
+                 data_format='NCHW'):
         self.batch_size = batch_size
         self.num_threads = num_threads
         self.repeat = repeat
@@ -135,6 +140,7 @@ class _InputProcessor(object):
         self.seed = seed
         self.distort_image = distort_image
         self.target_image_size = target_image_size
+        self.data_format = data_format
 
     def from_tfrecords(self, files):
         dataset = data.TFRecordDataset(files)
@@ -162,7 +168,10 @@ class _InputProcessor(object):
         image = tf.image.convert_image_dtype(image, tf.float32)
         if self.distort_image:
             image = tf.image.random_flip_left_right(image)
-        image = tf.transpose(image, [2, 0, 1])
+
+        if self.data_format == 'NCHW':
+            image = tf.transpose(image, [2, 0, 1])
+
         return image
 
     @staticmethod

@@ -8,6 +8,7 @@ from squeezenet import networks
 from squeezenet import arg_parsing
 from squeezenet import metrics
 
+#input(f"pid: {os.getpid()}")
 
 def _run(args):
     network = networks.catalogue[args.network](args)
@@ -29,11 +30,15 @@ def _run(args):
         examples, labels = pipeline.data
         images = examples['image']
 
+        print("****************************IMAGE SPLITS")
+        print(images)
         image_splits = tf.split(
             value=images,
             num_or_size_splits=deploy_config.num_clones,
             name='split_images'
         )
+
+
         label_splits = tf.split(
             value=labels,
             num_or_size_splits=deploy_config.num_clones,
