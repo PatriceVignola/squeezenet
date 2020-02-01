@@ -159,8 +159,8 @@ class _InputProcessor(object):
 
     def _preprocess_example(self, serialized_example):
         parsed_example = self._parse_serialized_example(serialized_example)
-        image = self._preprocess_image(parsed_example['image'])
-        return {'image': image}, parsed_example['label']
+        image = self._preprocess_image(parsed_example['image/encoded'])
+        return {'image': image}, parsed_example['image/class/label']
 
     def _preprocess_image(self, raw_image):
         image = tf.image.decode_jpeg(raw_image, channels=3)
@@ -177,8 +177,8 @@ class _InputProcessor(object):
     @staticmethod
     def _parse_serialized_example(serialized_example):
         features = {
-            'image': tf.FixedLenFeature([], tf.string),
-            'label': tf.FixedLenFeature([], tf.int64),
+            'image/encoded': tf.FixedLenFeature([], tf.string),
+            'image/class/label': tf.FixedLenFeature([], tf.int64),
         }
         return tf.parse_single_example(serialized=serialized_example,
                                        features=features)

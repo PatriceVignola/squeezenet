@@ -8,8 +8,6 @@ from squeezenet import networks
 from squeezenet import arg_parsing
 from squeezenet import metrics
 
-#input(f"pid: {os.getpid()}")
-
 def _run(args):
     network = networks.catalogue[args.network](args)
 
