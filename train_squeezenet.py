@@ -79,7 +79,6 @@ def _run(args):
         model_dp.train_op,
         train_metrics.update_op
     )
-
     '''Summaries'''
     with tf.device(deploy_config.variables_device()):
         train_writer = tf.summary.FileWriter(args.model_dir, sess.graph)
@@ -89,17 +88,18 @@ def _run(args):
         tf.summary.scalar('loss', model_dp.total_loss)
         all_summaries = tf.summary.merge_all()
 
-    '''Model Checkpoints'''
-    saver = tf.train.Saver(max_to_keep=args.keep_last_n_checkpoints)
-    save_path = os.path.join(args.model_dir, 'model.ckpt')
+    if args.keep_last_n_checkpoints:
+        '''Model Checkpoints'''
+        saver = tf.train.Saver(max_to_keep=args.keep_last_n_checkpoints)
+        save_path = os.path.join(args.model_dir, 'model.ckpt')
 
     '''Model Initialization'''
     last_checkpoint = tf.train.latest_checkpoint(args.model_dir)
-    if last_checkpoint:
+    if args.keep_last_n_checkpoints and last_checkpoint:
         saver.restore(sess, last_checkpoint)
     else:
         init_op = tf.group(tf.global_variables_initializer(),
-                           tf.local_variables_initializer())
+                        tf.local_variables_initializer())
         sess.run(init_op)
     starting_step = sess.run(global_step)
 
@@ -118,9 +118,10 @@ def _run(args):
             print('Train Step {:<5}:  {:>.4}'
                   .format(train_step, results['accuracy']))
 
-        '''Checkpoint Hooks'''
-        if train_step % args.checkpoint_interval == 0:
-            saver.save(sess, save_path, global_step)
+        if args.keep_last_n_checkpoints:
+            '''Checkpoint Hooks'''
+            if train_step % args.checkpoint_interval == 0:
+                saver.save(sess, save_path, global_step)
 
         sess.run(train_metrics.reset_op)
 
