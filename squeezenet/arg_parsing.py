@@ -133,4 +133,8 @@ class ArgParser(object):
             type=str,
             choices=['NCHW', 'NHWC']
         )
+        parser.add_argument(
+            '--trace',
+            action='store_true'
+        )
         return parser

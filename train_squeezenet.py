@@ -8,6 +8,8 @@ from squeezenet import networks
 from squeezenet import arg_parsing
 from squeezenet import metrics
 
+from tensorflow.python.client import timeline
+
 def _run(args):
     network = networks.catalogue[args.network](args)
 
@@ -79,6 +81,7 @@ def _run(args):
         model_dp.train_op,
         train_metrics.update_op
     )
+
     '''Summaries'''
     with tf.device(deploy_config.variables_device()):
         train_writer = tf.summary.FileWriter(args.model_dir, sess.graph)
@@ -103,9 +106,16 @@ def _run(args):
         sess.run(init_op)
     starting_step = sess.run(global_step)
 
+    if args.trace:
+        options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+        run_metadata = tf.RunMetadata()
+    else:
+        options = None
+        run_metadata = None
+
     '''Main Loop'''
     for train_step in range(starting_step, args.max_train_steps):
-        sess.run(train_op, feed_dict=pipeline.training_data)
+        sess.run(train_op, feed_dict=pipeline.training_data, options=options, run_metadata=run_metadata)
 
         '''Summary Hook'''
         if train_step % args.summary_interval == 0:
@@ -145,6 +155,12 @@ def _run(args):
             ])
             eval_writer.add_summary(summary, train_step)
             sess.run(validation_init_op)  # Reinitialize dataset and metrics
+
+    if args.trace:
+        fetched_timeline = timeline.Timeline(run_metadata.step_stats)
+        chrome_trace = fetched_timeline.generate_chrome_trace_format()
+        with open(os.path.join(args.model_dir, 'cifar_trace.json'), 'w') as f:
+            f.write(chrome_trace)
 
 
 def _clone_fn(images,
