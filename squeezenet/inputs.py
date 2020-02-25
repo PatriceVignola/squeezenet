@@ -103,8 +103,7 @@ class Pipeline(object):
                 batch_size=1,
                 padded_shapes=_get_padded_shapes(tf.compat.v1.data.get_output_shapes(dataset), batch_size),
                 padding_values=_get_padded_types(tf.compat.v1.data.get_output_types(dataset))
-            )
-            dataset.unbatch()
+            ).apply(tf.contrib.data.unbatch())
         return dataset
 
 
