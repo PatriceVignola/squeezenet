@@ -1,4 +1,6 @@
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 import tensorflow as tf
 import shutil
 import argparse
@@ -26,8 +28,7 @@ def main():
 
     with tf.compat.v1.Session(
             graph=tf.Graph(),
-            config=tf.compat.v1.ConfigProto(allow_soft_placement=True, 
-                                            log_device_placement=True)) as sess:
+            config=tf.compat.v1.ConfigProto(allow_soft_placement=True)) as sess:
         # Restore from checkpoint
         loader = tf.compat.v1.train.import_meta_graph(
                 trained_checkpoint_prefix + '.meta')
@@ -35,7 +36,7 @@ def main():
         loader.restore(sess, trained_checkpoint_prefix)
         
         # Export checkpoint to SavedModel
-        builder = tf.saved_model.builder.SavedModelBuilder(export_dir)
+        builder = tf.compat.v1.saved_model.builder.SavedModelBuilder(export_dir)
 
         images = sess.graph.get_tensor_by_name('inputs/split_images:0')
         is_training = sess.graph.get_tensor_by_name('inputs/is_training:0')
@@ -47,7 +48,7 @@ def main():
 
         builder.add_meta_graph_and_variables(
                 sess,
-                [tf.saved_model.tag_constants.TRAINING],
+                [tf.saved_model.SERVING],
                 strip_default_attrs=True,
                 signature_def_map={'predict': signature})
 

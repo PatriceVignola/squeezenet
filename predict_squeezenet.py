@@ -22,8 +22,7 @@ def _parse_args():
 def main():
     with tf.compat.v1.Session(
             graph=tf.Graph(),
-            config=tf.compat.v1.ConfigProto(allow_soft_placement=False, 
-                                            log_device_placement=True)) as sess:
+            config=tf.compat.v1.ConfigProto()) as sess:
         args = _parse_args()
 
         model = tf.compat.v2.saved_model.load(
@@ -38,7 +37,7 @@ def main():
         squeezenet = predict(images=tf.constant(image, dtype=tf.float32),
                              is_training=tf.constant(False))
 
-        sess.run(tf.global_variables_initializer())
+        sess.run(tf.compat.v1.global_variables_initializer())
         results = sess.run(squeezenet)["predictions"]
 
         label = labels[results[0]].split(":")[1]
