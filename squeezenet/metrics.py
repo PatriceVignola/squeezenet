@@ -26,13 +26,13 @@ class Metrics(object):
                     self.labels = tf.boolean_mask(self.labels, not_padded)
                     predictions = tf.boolean_mask(predictions, not_padded)
 
-                self.accuracy, self.update_op = tf.metrics.accuracy(
+                self.accuracy, self.update_op = tf.compat.v1.metrics.accuracy(
                     labels=self.labels,
                     predictions=predictions
                 )
                 accuracy_vars = tf.contrib.framework.get_local_variables(
                     scope='metrics/{}/accuracy'.format(self.name)
                 )
-                self.reset_op = tf.variables_initializer(
+                self.reset_op = tf.compat.v1.variables_initializer(
                     var_list=accuracy_vars
                 )

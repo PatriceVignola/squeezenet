@@ -37,10 +37,12 @@ class Pipeline(object):
             data_format=args.data_format
         )
 
-        self._handle = tf.placeholder(tf.string, shape=[])
-        self._is_training = tf.placeholder(tf.bool, [], 'is_training')
-        iterator = data.Iterator.from_string_handle(
-            self._handle, training_dataset.output_types, training_dataset.output_shapes
+        self._handle = tf.compat.v1.placeholder(tf.string, shape=[])
+        self._is_training = tf.compat.v1.placeholder(tf.bool, [], 'is_training')
+        iterator = tf.compat.v1.data.Iterator.from_string_handle(
+            self._handle,
+            tf.compat.v1.data.get_output_types(training_dataset),
+            tf.compat.v1.data.get_output_shapes(training_dataset)
         )
 
         self.data = iterator.get_next()
@@ -99,9 +101,10 @@ class Pipeline(object):
         if pad_batch:
             dataset = dataset.padded_batch(
                 batch_size=1,
-                padded_shapes=_get_padded_shapes(dataset.output_shapes, batch_size),
-                padding_values=_get_padded_types(dataset.output_types)
-            ).apply(tf.contrib.data.unbatch())
+                padded_shapes=_get_padded_shapes(tf.compat.v1.data.get_output_shapes(dataset), batch_size),
+                padding_values=_get_padded_types(tf.compat.v1.data.get_output_types(dataset))
+            )
+            dataset.unbatch()
         return dataset
 
 
@@ -110,7 +113,7 @@ def _get_padded_shapes(output_shapes, batch_size):
     for feature, shape in output_shapes[0].items():
         feature_dims = shape.dims[1:]
         feature_shapes[feature] = tf.TensorShape(
-            [tf.Dimension(batch_size)] + feature_dims)
+            [tf.compat.v1.Dimension(batch_size)] + feature_dims)
     return feature_shapes, batch_size
 
 

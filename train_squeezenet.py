@@ -1,4 +1,6 @@
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+
 import tensorflow as tf
 
 from models.research.slim.deployment import model_deploy
@@ -16,13 +18,13 @@ def _run(args):
     network = networks.catalogue[args.network](args)
 
     deploy_config = _configure_deployment(args.num_gpus)
-    sess = tf.Session(config=_configure_session())
+    sess = tf.compat.v1.Session(config=_configure_session())
 
     with tf.device(deploy_config.variables_device()):
-        global_step = tf.train.create_global_step()
+        global_step = tf.compat.v1.train.create_global_step()
 
     with tf.device(deploy_config.optimizer_device()):
-        optimizer = tf.train.AdamOptimizer(
+        optimizer = tf.compat.v1.train.AdamOptimizer(
             learning_rate=args.learning_rate
         )
 
@@ -86,23 +88,23 @@ def _run(args):
 
     '''Summaries'''
     with tf.device(deploy_config.variables_device()):
-        train_writer = tf.summary.FileWriter(args.model_dir, sess.graph)
+        train_writer = tf.compat.v1.summary.FileWriter(args.model_dir, sess.graph)
         eval_dir = os.path.join(args.model_dir, 'eval')
-        eval_writer = tf.summary.FileWriter(eval_dir, sess.graph)
+        eval_writer = tf.compat.v1.summary.FileWriter(eval_dir, sess.graph)
         tf.summary.scalar('accuracy', train_metrics.accuracy)
         tf.summary.scalar('loss', model_dp.total_loss)
-        all_summaries = tf.summary.merge_all()
+        all_summaries = tf.compat.v1.summary.merge_all()
 
     if args.keep_last_n_checkpoints:
         '''Model Checkpoints'''
-        saver = tf.train.Saver(max_to_keep=args.keep_last_n_checkpoints)
+        saver = tf.compat.v1.train.Saver(max_to_keep=args.keep_last_n_checkpoints)
         save_path = os.path.join(args.model_dir, 'model.ckpt')
 
     '''Model Initialization'''
     last_checkpoint = tf.train.latest_checkpoint(args.model_dir)
 
-    init_op = tf.group(tf.global_variables_initializer(),
-                       tf.local_variables_initializer())
+    init_op = tf.group(tf.compat.v1.global_variables_initializer(),
+                       tf.compat.v1.local_variables_initializer())
     sess.run(init_op)
 
     if args.keep_last_n_checkpoints and last_checkpoint:
@@ -154,8 +156,9 @@ def _run(args):
             print('Evaluation Step {:<5}:  {:>.4}'
                   .format(train_step, results['accuracy']))
 
-            summary = tf.Summary(value=[
-                tf.Summary.Value(tag='accuracy', simple_value=results['accuracy']),
+            summary = tf.compat.v1.Summary(value=[
+                    tf.compat.v1.Summary.Value(
+                            tag='accuracy', simple_value=results['accuracy']),
             ])
             eval_writer.add_summary(summary, train_step)
             sess.run(validation_init_op)  # Reinitialize dataset and metrics
@@ -177,8 +180,8 @@ def _clone_fn(images,
     labels = labels[clone_index]
 
     unscaled_logits = network.build(images, is_training)
-    tf.losses.sparse_softmax_cross_entropy(labels=labels,
-                                           logits=unscaled_logits)
+    tf.compat.v1.losses.sparse_softmax_cross_entropy(labels=labels,
+                                                     logits=unscaled_logits)
     predictions = tf.argmax(unscaled_logits, 1, name='predictions')
     return {
         'predictions': predictions,
@@ -191,9 +194,9 @@ def _configure_deployment(num_gpus):
 
 
 def _configure_session():
-    gpu_config = tf.GPUOptions(per_process_gpu_memory_fraction=.8)
-    return tf.ConfigProto(allow_soft_placement=True,
-                          gpu_options=gpu_config)
+    gpu_config = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=.8)
+    return tf.compat.v1.ConfigProto(allow_soft_placement=True,
+                                    gpu_options=gpu_config)
 
 
 def run(args=None):
