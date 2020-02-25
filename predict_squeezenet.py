@@ -13,12 +13,6 @@ def _parse_args():
         help="Directory of the checkpoint to run inference on.")
 
     parser.add_argument(
-        "--labels",
-        type=str,
-        required=True,
-        help="Path to the file that contains the labels.")
-
-    parser.add_argument(
         "--image",
         required=True,
         help="Path to the 32x32 image to classify.")
@@ -34,7 +28,8 @@ def main():
 
         model = tf.compat.v2.saved_model.load(
                 os.path.join(args.model_dir, "models", "0"))
-        labels = np.array(open(args.labels).read().splitlines())
+        labels_path = os.path.join(args.model_dir, "labels.txt")
+        labels = np.array(open(labels_path).read().splitlines())
         image = plt.imread(args.image)
         image = np.expand_dims(image, axis=0) * 255
 
