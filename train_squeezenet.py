@@ -91,8 +91,8 @@ def _run(args):
         train_writer = tf.compat.v1.summary.FileWriter(args.model_dir, sess.graph)
         eval_dir = os.path.join(args.model_dir, 'eval')
         eval_writer = tf.compat.v1.summary.FileWriter(eval_dir, sess.graph)
-        tf.summary.scalar('accuracy', train_metrics.accuracy)
-        tf.summary.scalar('loss', model_dp.total_loss)
+        tf.compat.v1.summary.scalar('accuracy', train_metrics.accuracy)
+        tf.compat.v1.summary.scalar('loss', model_dp.total_loss)
         all_summaries = tf.compat.v1.summary.merge_all()
 
     if args.keep_last_n_checkpoints:

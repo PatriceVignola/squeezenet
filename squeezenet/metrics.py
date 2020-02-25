@@ -14,8 +14,8 @@ class Metrics(object):
         self._generate_metrics()
 
     def _generate_metrics(self):
-        with tf.variable_scope('metrics'), tf.device(self.device):
-            with tf.variable_scope(self.name):
+        with tf.compat.v1.variable_scope('metrics'), tf.device(self.device):
+            with tf.compat.v1.variable_scope(self.name):
                 predictions = tf.concat(
                     values=self.clone_predictions,
                     axis=0

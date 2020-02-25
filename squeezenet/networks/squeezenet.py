@@ -16,7 +16,7 @@ def fire_module(inputs,
                 reuse=None,
                 scope=None,
                 data_format='NCHW'):
-    with tf.variable_scope(scope, 'fire', [inputs], reuse=reuse):
+    with tf.compat.v1.variable_scope(scope, 'fire', [inputs], reuse=reuse):
         with arg_scope([conv2d, max_pool2d]):
             net = _squeeze(inputs, squeeze_depth)
             net = _expand(net, expand_depth, data_format)
@@ -30,7 +30,7 @@ def _squeeze(inputs, num_outputs):
 def _expand(inputs, num_outputs, data_format):
     concat_axis = 1 if data_format == 'NCHW' else 3
 
-    with tf.variable_scope('expand'):
+    with tf.compat.v1.variable_scope('expand'):
         e1x1 = conv2d(inputs, num_outputs, [1, 1], stride=1, scope='1x1')
         e3x3 = conv2d(inputs, num_outputs, [3, 3], scope='3x3')
 
@@ -91,7 +91,7 @@ class Squeezenet_CIFAR(object):
 
     def build(self, x, is_training):
         self._is_built = True
-        with tf.variable_scope(self.name, values=[x]):
+        with tf.compat.v1.variable_scope(self.name, values=[x]):
             with arg_scope(_arg_scope(is_training,
                                       self._weight_decay,
                                       self._batch_norm_decay,
