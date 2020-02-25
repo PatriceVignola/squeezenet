@@ -3,6 +3,9 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import matplotlib.pyplot as plt
+from tensorflow.python.util import deprecation
+
+deprecation._PRINT_DEPRECATION_WARNINGS = False
 
 def _parse_args():
     parser = argparse.ArgumentParser("run_squeezenet.py")

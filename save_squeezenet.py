@@ -5,6 +5,9 @@ import tensorflow as tf
 import shutil
 import argparse
 from tensorflow.python.saved_model.signature_def_utils_impl import predict_signature_def
+from tensorflow.python.util import deprecation
+
+deprecation._PRINT_DEPRECATION_WARNINGS = False
 
 def _parse_args():
     parser = argparse.ArgumentParser("save_squeezenet.py")

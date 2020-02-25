@@ -11,7 +11,9 @@ from squeezenet import arg_parsing
 from squeezenet import metrics
 
 from tensorflow.python.client import timeline
+from tensorflow.python.util import deprecation
 
+deprecation._PRINT_DEPRECATION_WARNINGS = False
 tf.compat.v1.enable_resource_variables()
 
 def _run(args):
