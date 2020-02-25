@@ -10,6 +10,8 @@ from squeezenet import metrics
 
 from tensorflow.python.client import timeline
 
+tf.compat.v1.enable_resource_variables()
+
 def _run(args):
     network = networks.catalogue[args.network](args)
 
@@ -98,12 +100,14 @@ def _run(args):
 
     '''Model Initialization'''
     last_checkpoint = tf.train.latest_checkpoint(args.model_dir)
+
+    init_op = tf.group(tf.global_variables_initializer(),
+                       tf.local_variables_initializer())
+    sess.run(init_op)
+
     if args.keep_last_n_checkpoints and last_checkpoint:
         saver.restore(sess, last_checkpoint)
-    else:
-        init_op = tf.group(tf.global_variables_initializer(),
-                        tf.local_variables_initializer())
-        sess.run(init_op)
+
     starting_step = sess.run(global_step)
 
     if args.trace:
