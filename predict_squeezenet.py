@@ -20,6 +20,11 @@ def _parse_args():
         required=True,
         help="Path to the 32x32 image to classify.")
 
+    parser.add_argument(
+        '--data_format',
+        default='NCHW',
+        choices=['NCHW', 'NHWC'])
+
     return parser.parse_args()
 
 def main():
@@ -34,6 +39,9 @@ def main():
         labels = np.array(open(labels_path).read().splitlines())
         image = plt.imread(args.image)
         image = np.expand_dims(image, axis=0) * 255
+
+        if args.data_format == "NCHW":
+            image = np.transpose(image, [0, 3, 1, 2])
 
         predict = model.signatures["predict"]
 
