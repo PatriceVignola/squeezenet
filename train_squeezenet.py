@@ -126,7 +126,7 @@ def _run(args):
         sess.run(train_op, feed_dict=pipeline.training_data, options=options, run_metadata=run_metadata)
 
         '''Summary Hook'''
-        if train_step % args.summary_interval == 0:
+        if args.summary_interval > 0 and train_step % args.summary_interval == 0:
             results = sess.run(
                 fetches={'accuracy': train_metrics.accuracy,
                          'summary': all_summaries},
@@ -138,13 +138,13 @@ def _run(args):
 
         if args.keep_last_n_checkpoints:
             '''Checkpoint Hooks'''
-            if train_step % args.checkpoint_interval == 0:
+            if args.checkpoint_interval > 0 and train_step % args.checkpoint_interval == 0:
                 saver.save(sess, save_path, global_step)
 
         sess.run(train_metrics.reset_op)
 
         '''Eval Hook'''
-        if train_step % args.validation_interval == 0:
+        if args.validation_interval > 0 and train_step % args.validation_interval == 0:
             while True:
                 try:
                     sess.run(
