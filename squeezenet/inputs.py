@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow import data
+import os
 
 
 class Pipeline(object):
@@ -10,6 +11,26 @@ class Pipeline(object):
         target_image_size = (args.target_image_size
                              if hasattr(args, 'target_image_size') else None)
 
+        train_tfrecords = []
+        for path in args.train_tfrecord_filepaths:
+            if os.path.isdir(path):
+                for file in os.listdir(path):
+                    if file.endswith(".tfrecord") or file.endswith(".tfrecords"):
+                        full_path = os.path.abspath(os.path.join(path, file))
+                        train_tfrecords.append(full_path)
+            else:
+                train_tfrecords.append(path)
+
+        validation_tfrecords = []
+        for path in args.validation_tfrecord_filepaths:
+            if os.path.isdir(path):
+                for file in os.listdir(path):
+                    if file.endswith(".tfrecord") or file.endswith(".tfrecords"):
+                        full_path = os.path.abspath(os.path.join(path, file))
+                        validation_tfrecords.append(full_path)
+            else:
+                validation_tfrecords.append(path)
+
         training_dataset = self._create_dataset(
             batch_size=args.batch_size * args.num_gpus,
             pad_batch=False,
@@ -18,7 +39,8 @@ class Pipeline(object):
             shuffle=True,
             shuffle_buffer=args.shuffle_buffer,
             seed=args.seed,
-            files=args.train_tfrecord_filepaths,
+            files=train_tfrecords,
+            network=args.network,
             distort_image=True,
             target_image_size=target_image_size,
             data_format=args.data_format
@@ -31,7 +53,8 @@ class Pipeline(object):
             num_input_threads=args.num_input_threads,
             shuffle=False,
             shuffle_buffer=None,
-            files=args.validation_tfrecord_filepaths,
+            files=validation_tfrecords,
+            network=args.network,
             distort_image=False,
             target_image_size=target_image_size,
             data_format=args.data_format
@@ -79,6 +102,7 @@ class Pipeline(object):
                         shuffle,
                         shuffle_buffer,
                         files,
+                        network,
                         seed=1337,
                         distort_image=None,
                         target_image_size=None,
@@ -92,6 +116,7 @@ class Pipeline(object):
             shuffle=shuffle,
             shuffle_buffer=shuffle_buffer,
             seed=seed,
+            network=network,
             distort_image=distort_image,
             target_image_size=target_image_size,
             data_format=data_format
@@ -131,6 +156,7 @@ class _InputProcessor(object):
                  shuffle,
                  shuffle_buffer,
                  seed,
+                 network,
                  distort_image=None,
                  target_image_size=None,
                  data_format='NCHW'):
@@ -143,6 +169,7 @@ class _InputProcessor(object):
         self.distort_image = distort_image
         self.target_image_size = target_image_size
         self.data_format = data_format
+        self.network = network
 
     def from_tfrecords(self, files):
         dataset = data.TFRecordDataset(files)
@@ -160,12 +187,22 @@ class _InputProcessor(object):
         return dataset
 
     def _preprocess_example(self, serialized_example):
-        parsed_example = self._parse_serialized_example(serialized_example)
-        image = self._preprocess_image(parsed_example['image/encoded'])
-        return {'image': image}, parsed_example['image/class/label']
+        parsed_example = self._parse_serialized_example(serialized_example, self.network)
+
+        if self.network.lower() == "squeezenet_tiny":
+            image = self._preprocess_image(parsed_example['image_raw'])
+            return {'image': image}, parsed_example['label']
+        else:
+            image = self._preprocess_image(parsed_example['image/encoded'])
+            return {'image': image}, parsed_example['image/class/label']
 
     def _preprocess_image(self, raw_image):
-        image = tf.image.decode_jpeg(raw_image, channels=3)
+        if self.network.lower() == "squeezenet_tiny":
+            image = tf.io.decode_raw(raw_image, tf.uint8)
+            image = tf.reshape(image, [64, 64, 3])
+        else:
+            image = tf.image.decode_jpeg(raw_image, channels=3)
+
         image = tf.image.resize_images(image, self.target_image_size)
         image = tf.image.convert_image_dtype(image, tf.float32)
         if self.distort_image:
@@ -177,10 +214,22 @@ class _InputProcessor(object):
         return image
 
     @staticmethod
-    def _parse_serialized_example(serialized_example):
-        features = {
-            'image/encoded': tf.FixedLenFeature([], tf.string),
-            'image/class/label': tf.FixedLenFeature([], tf.int64),
-        }
+    def _parse_serialized_example(serialized_example, network):
+        if network.lower() == "squeezenet_tiny":
+            features = {
+                'height': tf.FixedLenFeature((), tf.int64),
+                'width': tf.FixedLenFeature((), tf.int64),
+                'channel': tf.FixedLenFeature((), tf.int64),
+                'label': tf.FixedLenFeature((), tf.int64),
+                'label_depth': tf.FixedLenFeature((), tf.int64),
+                'label_one_hot_raw': tf.FixedLenFeature((), tf.string),
+                'image_raw': tf.FixedLenFeature((), tf.string),
+                'location_raw': tf.FixedLenFeature((), tf.string)
+            }
+        else:
+            features = {
+                'image/encoded': tf.FixedLenFeature([], tf.string),
+                'image/class/label': tf.FixedLenFeature([], tf.int64),
+            }
         return tf.parse_single_example(serialized=serialized_example,
                                        features=features)

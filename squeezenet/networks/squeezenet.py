@@ -123,6 +123,51 @@ class Squeezenet_CIFAR(object):
         return logits
 
 
+class Squeezenet_Tiny(object):
+    """Modified version of squeezenet for Tiny ImageNet images."""
+    name = 'squeezenet_tiny'
+
+    def __init__(self, args):
+        self._num_classes = args.num_classes
+        self._weight_decay = args.weight_decay
+        self._batch_norm_decay = args.batch_norm_decay
+        self._is_built = False
+        self._data_format = args.data_format
+
+    def build(self, x, is_training):
+        self._is_built = True
+        with tf.compat.v1.variable_scope(self.name, values=[x]):
+            with arg_scope(_arg_scope(is_training,
+                                      self._weight_decay,
+                                      self._batch_norm_decay,
+                                      self._data_format)):
+                return self._squeezenet(x, data_format=self._data_format)
+
+    @staticmethod
+    def _squeezenet(images, num_classes=200, data_format='NCHW'):
+        net = conv2d(images, 96, [2, 2], scope='conv1')
+        net = max_pool2d(net, [2, 2], scope='maxpool1')
+        net = fire_module(net, 16, 64, scope='fire2', data_format=data_format)
+        net = fire_module(net, 16, 64, scope='fire3', data_format=data_format)
+        net = fire_module(net, 32, 128, scope='fire4', data_format=data_format)
+        net = max_pool2d(net, [2, 2], scope='maxpool4')
+        net = fire_module(net, 32, 128, scope='fire5', data_format=data_format)
+        net = fire_module(net, 48, 192, scope='fire6', data_format=data_format)
+        net = fire_module(net, 48, 192, scope='fire7', data_format=data_format)
+        net = fire_module(net, 64, 256, scope='fire8', data_format=data_format)
+        net = max_pool2d(net, [2, 2], scope='maxpool8')
+        net = fire_module(net, 64, 256, scope='fire9', data_format=data_format)
+        net = avg_pool2d(net, [7, 7], scope='avgpool10')
+        net = conv2d(net, num_classes, [1, 1],
+                     activation_fn=None,
+                     normalizer_fn=None,
+                     scope='conv10')
+
+        squeeze_axes = [2, 3] if data_format == 'NCHW' else [1, 2]
+        logits = tf.squeeze(net, squeeze_axes, name='logits')
+        return logits
+
+
 def _arg_scope(is_training, weight_decay, bn_decay, data_format):
     with arg_scope([conv2d],
                    weights_regularizer=l2_regularizer(weight_decay),
