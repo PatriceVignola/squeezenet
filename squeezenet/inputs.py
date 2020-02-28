@@ -203,8 +203,9 @@ class _InputProcessor(object):
         else:
             image = tf.image.decode_jpeg(raw_image, channels=3)
 
-        image = tf.image.resize_images(image, self.target_image_size)
         image = tf.image.convert_image_dtype(image, tf.float32)
+        image = tf.image.resize_images(image, self.target_image_size)
+
         if self.distort_image:
             image = tf.image.random_flip_left_right(image)
 
