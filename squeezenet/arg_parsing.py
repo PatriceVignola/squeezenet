@@ -137,4 +137,5 @@ class ArgParser(object):
             '--trace',
             action='store_true'
         )
+        parser.add_argument('--clone_on_cpu', action='store_true')
         return parser

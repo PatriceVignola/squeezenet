@@ -19,7 +19,7 @@ tf.compat.v1.enable_resource_variables()
 def _run(args):
     network = networks.catalogue[args.network](args)
 
-    deploy_config = _configure_deployment(args.num_gpus)
+    deploy_config = _configure_deployment(args.num_gpus, args.clone_on_cpu)
     sess = tf.compat.v1.Session(config=_configure_session())
 
     with tf.device(deploy_config.variables_device()):
@@ -191,8 +191,9 @@ def _clone_fn(images,
     }
 
 
-def _configure_deployment(num_gpus):
-    return model_deploy.DeploymentConfig(num_clones=num_gpus)
+def _configure_deployment(num_gpus, clone_on_cpu):
+    return model_deploy.DeploymentConfig(num_clones=num_gpus,
+                                         clone_on_cpu=clone_on_cpu)
 
 
 def _configure_session():
