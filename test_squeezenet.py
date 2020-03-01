@@ -103,7 +103,6 @@ def run_inference(args, class_labels, sample_label_pairs):
                 if class_labels[prediction] == expected_label:
                     good_prediction_count += 1
 
-    print(f"{good_prediction_count} / {total_predictions}")
     print(f"Test Accuracy: {good_prediction_count / total_predictions}")
 
 def test_squeezenet_cifar(args):
