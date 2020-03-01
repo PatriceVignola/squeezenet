@@ -79,6 +79,7 @@ def run_inference(args, class_labels, sample_label_pairs):
         image_batches.append(images)
         label_batches.append(current_labels)
 
+    total_predictions = 0
     good_prediction_count = 0
 
     with tf.compat.v1.Session(
@@ -96,12 +97,14 @@ def run_inference(args, class_labels, sample_label_pairs):
 
             sess.run(tf.compat.v1.global_variables_initializer())
             predictions = sess.run(squeezenet)["predictions"]
+            total_predictions += len(predictions)
 
             for prediction, expected_label in zip(predictions, labels_batch):
                 if class_labels[prediction] == expected_label:
                     good_prediction_count += 1
 
-    print(f"Test Accuracy: {good_prediction_count / args.sample_size}")
+    print(f"{good_prediction_count} / {total_predictions}")
+    print(f"Test Accuracy: {good_prediction_count / total_predictions}")
 
 def test_squeezenet_cifar(args):
     args = _parse_args()
