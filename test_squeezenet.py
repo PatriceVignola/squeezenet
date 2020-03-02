@@ -45,39 +45,33 @@ def _parse_args():
     return parser.parse_args()
 
 def run_inference(args, class_labels, sample_label_pairs):
-    images = None
     image_batches = []
     label_batches = []
-    current_labels = []
 
-    for index, (sample, label) in enumerate(sample_label_pairs):
-        image = plt.imread(sample)
-        image = np.expand_dims(image, axis=0)
+    for i in range(0, len(sample_label_pairs), args.batch_size):
+        sample_label_pair_batch = sample_label_pairs[i:i + args.batch_size]
+        image_batch = []
+        label_batch = []
 
-        # Transform grayscale images into RGB color space
-        if image.ndim == 3:
-            image = np.expand_dims(image, axis=3)
-            image = np.concatenate((image, image, image), axis=3)
+        for sample, label in sample_label_pair_batch:
+            image = plt.imread(sample)
+            image = np.expand_dims(image, axis=0)
+
+            # Transform grayscale images into RGB color space
+            if image.ndim == 3:
+                image = np.expand_dims(image, axis=3)
+                image = np.concatenate((image, image, image), axis=3)
+
+            image_batch.append(image)
+            label_batch.append(label)
+
+        image_batch = np.concatenate(image_batch, axis=0)
 
         if args.data_format == "NCHW":
-            image = np.transpose(image, [0, 3, 1, 2])
+            image_batch = np.transpose(image_batch, [0, 3, 1, 2])
 
-        if images is None:
-            images = image
-        else:
-            images = np.concatenate((images, image), axis=0)
-
-        current_labels.append(label)
-
-        if (index + 1) % args.batch_size == 0:
-            image_batches.append(images)
-            label_batches.append(current_labels)
-            images = None
-            current_labels = []
-
-    if images is not None:
-        image_batches.append(images)
-        label_batches.append(current_labels)
+        image_batches.append(image_batch)
+        label_batches.append(label_batch)
 
     total_predictions = 0
     good_prediction_count = 0
@@ -127,6 +121,7 @@ def test_squeezenet_tiny(args):
     class_labels_dir = os.path.split(val_annotations_dir)[0]
     class_labels_path = os.path.join(class_labels_dir, "wnids.txt")
     class_labels = np.array(open(class_labels_path).read().splitlines())
+    class_labels = sorted(class_labels)
 
     image_label_map = {}
 

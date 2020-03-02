@@ -59,7 +59,7 @@ def _process_image_files(tfrecord_dir, X, Y, Y_one_hot, Loc, num_label, shard_si
     num_shards += 0 if len(X) % shard_size == 0 else 1
 
     for idx in range(num_shards):
-        X_shard = X[idx * shard_size: (idx + 1) * shard_size]        
+        X_shard = X[idx * shard_size: (idx + 1) * shard_size]
         Y_shard = Y[idx * shard_size: (idx + 1) * shard_size]
         Y_shard_one_hot = Y_one_hot[idx * shard_size: (idx + 1) * shard_size]
         Loc_shard = Loc[idx * shard_size: (idx + 1) * shard_size]
@@ -67,19 +67,26 @@ def _process_image_files(tfrecord_dir, X, Y, Y_one_hot, Loc, num_label, shard_si
         output_filename = '%s-%.5d-of-%.5d.tfrecords' % (prefix, idx, num_shards)
         output_file = os.path.join(tfrecord_dir, output_filename)
         writer = tf.python_io.TFRecordWriter(output_file)
-        for i in range(len(X_shard)):
 
+        for i in range(len(X_shard)):
             label = int(Y_shard[i])            
             img_raw = X_shard[i].tostring()
             location_raw = Loc_shard[i].tostring()
             label_one_hot_raw = Y_shard_one_hot[i].tostring()
             (height, width, channels) = X_shard[i].shape
 
-            example = _convert_to_example(height=height, width=width, channels=channels, label=label,
-                                          label_one_hot_raw=label_one_hot_raw, img_raw=img_raw, location_raw=location_raw)
+            example = _convert_to_example(height=height,
+                                          width=width,
+                                          channels=channels,
+                                          num_label=num_label,
+                                          label=label,
+                                          label_one_hot_raw=label_one_hot_raw,
+                                          img_raw=img_raw,
+                                          location_raw=location_raw)
+
             writer.write(example.SerializeToString())
 
-def _convert_to_example(height, width, channels, label, label_one_hot_raw, img_raw, location_raw):
+def _convert_to_example(height, width, channels, num_label, label, label_one_hot_raw, img_raw, location_raw):
     """Build an Example proto for an example.
 
     Args:
@@ -88,16 +95,14 @@ def _convert_to_example(height, width, channels, label, label_one_hot_raw, img_r
         Example proto
 
     """
-    colorspace = 'RGB'
     channels = 3
-    image_format = 'JPEG'
 
     example = tf.train.Example(features=tf.train.Features(feature={
         'height': _int64_feature(height),
         'width': _int64_feature(width),
         'channel': _int64_feature(channels),
         'label': _int64_feature(label),
-        'label_depth': _int64_feature(label),
+        'label_depth': _int64_feature(num_label),
 
         'label_one_hot_raw': _bytes_feature(label_one_hot_raw),
         'image_raw': _bytes_feature(img_raw),
@@ -109,7 +114,7 @@ def _read_train_validation_data(train_directory, train_id_list, num_class):
     train_origin = {'X':[], 'Y': [], 'Loc': []}
     train = {'X':[], 'Y': [], 'O': [], 'Loc': []}
     valid = {'X':[], 'Y': [], 'O': [], 'Loc': []}
-    # Read train_origin data and seperate it into two pieces: train and validation
+    # Read train_origin data and separate it into two pieces: train and validation
     train_dir_list = [os.path.join(train_directory, dir_) for dir_ in os.listdir(train_directory)]
 
     # Read train, valid
@@ -130,7 +135,7 @@ def _read_train_validation_data(train_directory, train_id_list, num_class):
             train_origin['X'].append(imread(image_dir, mode='RGB'))
             train_origin['Y'].append(train_id_list.index(os.path.basename(class_)))
             train_origin['Loc'].append(image_to_bbox[os.path.basename(image_dir)])
-        
+
     train_origin_list = [np.stack(train_origin[e]) for e in element_list]
     num_train_data = len(train_origin_list[0])
     rand = np.random.permutation(range(num_train_data))
@@ -196,17 +201,19 @@ train_id_list = os.listdir(TRAIN_DIRECTORY) # len is 200
 num_class = len(train_id_list)
 with open(WORDS_DIRECTORY, "r") as words_f:
     line_lists = words_f.readlines()
-words_f.close()
 
-for l in line_lists:    
-    wnid, word = l.split('\t')    
+for l in line_lists:
+    wnid, word = l.split('\t')
     if wnid in train_id_list:
         label = train_id_list.index(wnid)
         word = str(label) + ": " + word
         label_to_word[label] = word 
 data_dict['label_to_word']=label_to_word
 
-train, valid = _read_train_validation_data(TRAIN_DIRECTORY, train_id_list, num_class)
+train, valid = _read_train_validation_data(TRAIN_DIRECTORY,
+                                           train_id_list,
+                                           num_class)
+
 test = _read_test_data(TEST_IMAGE_DIRECTORY, train_id_list, num_class)
 
 for data_type in ['train', 'valid', 'test']:   
@@ -228,5 +235,3 @@ try: os.makedirs(os.path.dirname(pickle_save_path))
 except: pass
 with open(PICKLE_DIR, "wb") as pickle_f:
     pickle.dump(data_dict, pickle_f)
-pickle_f.close()
-
