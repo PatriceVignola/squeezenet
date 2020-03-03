@@ -165,11 +165,11 @@ def _run(args):
             eval_writer.add_summary(summary, train_step)
             sess.run(validation_init_op)  # Reinitialize dataset and metrics
 
-    if args.trace:
-        fetched_timeline = timeline.Timeline(run_metadata.step_stats)
-        chrome_trace = fetched_timeline.generate_chrome_trace_format()
-        with open(os.path.join(args.model_dir, 'cifar_trace.json'), 'w') as f:
-            f.write(chrome_trace)
+        if args.trace:
+            fetched_timeline = timeline.Timeline(run_metadata.step_stats)
+            chrome_trace = fetched_timeline.generate_chrome_trace_format()
+            with open(os.path.join(args.model_dir, f'cifar_trace_{train_step}.json'), 'w') as f:
+                f.write(chrome_trace)
 
 
 def _clone_fn(images,
